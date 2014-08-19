@@ -9,6 +9,8 @@
         
       <script type="text/javascript" src="js/jquery.js"></script> 
 		<script type="text/javascript" src="js/jquery.mobile-1.4.3.js"></script>
+		<!-- <script type="text/javascript" src="js/jquery-ui.js"></script> -->
+		 
 		<!--<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.2/jquery.mobile-1.4.2.min.css">-->
 		<!--<script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>-->
 		<!--<script src="http://code.jquery.com/mobile/1.4.2/jquery.mobile-1.4.2.min.js"></script>-->
@@ -56,20 +58,26 @@
 					    cursor: pointer;
 					    font-family: Geneva,Arial,Helvetica,sans-serif;
 					    border: 1px solid gray;
+					    margin: 2px;
+					    padding: 2px;
+					    width: 60px;
+					    height: 60px;
+					    line-height: 60px;
 					}
 					 
-					#items .ui-selected {
+					 .ui-selected {
 					    background: red;
 					    color: white;
 					    font-weight: bold;
 					}
 					 
-					 
+				 .ui-selecting { background: #FECA40; }
 					 
 					#items {
 					    list-style-type: none;
 					    margin: 0;
 					    padding: 0;
+					    box-sizing: border-box;
 					}
 					 
 				#items li {
@@ -133,7 +141,8 @@
         $(document).ready(function(){
         	//alert('onDevice ready');
         	
-        	
+        	var string = device.platform;
+
         	var db = window.openDatabase("html5.db", "1.0", "PhoneGap Demo", 1000000);
         	var autocompletenumber = new Array();
         	
@@ -141,7 +150,10 @@
         	var datastatus;
         	
         	function checkConnection() {
-                var networkState = navigator.connection.type;
+                var networkState = null; 
+                var platform = localStorage.getItem("deviceplatform"); 
+                if(platform == "Android"){ var networkState = navigator.connection.type; } 
+                else if(platform == "iOS") { var networkState = Connection.CELL; }
 
                 var states = {};
                 states[Connection.UNKNOWN]  = '0';
@@ -170,6 +182,12 @@
            		//alert("Browser support Html5");
                	console.log("Both localStorage and sessionStorage support is there.");
            	}
+           	
+           	var platform = localStorage.getItem("deviceplatform");
+            if(platform === null ){
+           	platform = window.device.platform;
+           	localStorage.setItem("deviceplatform",platform);
+            }
            	
            	//alert('Page one create event');
         	console.log('Page one create event');
@@ -279,7 +297,7 @@
    			                      		}
    			                      		
    			                      			function retriveContact(tx,results){
-   			                                   		alert("Retriving contact from database");	
+   			                                   		console.log("Retriving contact from database");	
 										        	dbResult = results;
 										        	var len= results.rows.length;
 										        	var htmlstring="";
@@ -314,7 +332,8 @@
    			                         //	
    			                      		}else {
    											
-   			                      			alert("Retriving Contact from mobile");
+   			                      			//alert("Retriving Contact from mobile");
+   			                      			console.log("Retriving Contact from mobile");
 	   			                      		var options = new ContactFindOptions();
 	   			                         	options.filter="";          // empty search string returns all contacts
 	   			                         	options.multiple=true;      // return multiple results
@@ -359,7 +378,8 @@
                  // Transaction success callback
                  //
                  function successCB() {
-                     alert("success!");
+                     //alert("success!");
+                     
                      localStorage.setItem("database_created", "1"); 
                      console.log("database created");
                  }
@@ -378,7 +398,10 @@
 				        			{   
 			               	 			
 			               	 			//below code is to re insert the updated list
-				               	 		var name = contacts[i].displayName;
+			               	 			if(contacts[i].displayName == null)
+			               	 				var name = contacts[i].name.givenName + contacts[i].name.familyName;
+			               	 			else
+				               	 			var name = contacts[i].displayName;
 				               	 		var phonenumber = contacts[i].phoneNumbers[0].value;
 				               	 		console.log("Name" + name);
 				               	 		console.log("Phonenumber" + phonenumber);
@@ -425,8 +448,11 @@
         	            	var licls = $("</li>");
         	            	var a = $("<a>");
         	            	var acls = $("</a>");
-        	            	a.attr("id", contacts[i].phoneNumbers[0].value).text(contacts[i].displayName);
-        	            	a.attr("href", contacts[i].phoneNumbers[0].value);
+        	            	if(contacts[i].displayName == null)
+        	            		a.attr("id", contacts[i].phoneNumbers[0].value).text(contacts[i].name.givenName + contacts[i].name.familyName);
+               	 			else
+               	 				a.attr("id", contacts[i].phoneNumbers[0].value).text(contacts[i].displayName);
+         	            	a.attr("href", contacts[i].phoneNumbers[0].value);
         	            	$("#contactlist").append(li)
         	            	li.append(a); //apended to li becos we wnad anchor tag inside tthe list
         	            	li.append(acls);
@@ -636,7 +662,7 @@
             $(document).on('click', '#a_contact_retrive', function(){
             	
 					             
-        	    	 alert("Retive button is clicked");
+        	    	 console.log("Retive button is clicked");
         	         var options = new ContactFindOptions();
         	         options.filter="";          // empty search string returns all contacts
         	         options.multiple=true;      // return multiple results
@@ -671,7 +697,8 @@
 	
 	       		                  
 		       		                  	function successCB() {
-		       		                      alert("success!");
+		       		                      //alert("success!");
+		       		                      
 		       		                      localStorage.setItem("database_created", "1"); 
 		       		                      console.log("database created from mannual contact retrive");
 		       		                  	}
@@ -689,7 +716,7 @@
 		        		                 function successDeleting(tx,contacts) {
 		        		                      if (contacts === null) alert("Contacts is null");
 		        		                     console.log("contact table rows deleted");
-		        		                     alert("Contact list updated");
+		        		                     alert("Contacts updated");
 		        		                 	}
 		        		                 
 		        		              	function contactInsert(name,phonenumber){
@@ -712,25 +739,32 @@
 	    							for (var i=0; i<=contacts.length; i++) {
 	            		             	    if (contacts === null) continue;
 	            		             	
-	    	        		             	if(contacts[i].phoneNumbers != null)
+	    	        		             	if(contacts[i].phoneNumbers != null)list
 	    	        						{            	
 	    	        			              	//below array is for autocomplete in direct call section 
 	    	        			              	autocompletenumber.push(contacts[i].phoneNumbers[0].value);
 	    	        			              	
 	    	        			              	//below code is to re insert the updated list
-	    	        			              	var name = contacts[i].displayName;
+	    	        			              	if(contacts[i].displayName == null)
+			               	 						var name = contacts[i].name.givenName + contacts[i].name.familyName;
+			               	 					else
+				               	 					var name = contacts[i].displayName;
+	    	        			              	
 	            				               	var phonenumber = contacts[i].phoneNumbers[0].value;
 	            				               	console.log("Name" + name);
 	            				               	console.log("Phonenumber" + phonenumber);
 	            				               	contactInsert(name,phonenumber);
 	    	        		             		
-	    	        		             		//below code is for pupulating the list
+	    	        		             		//below code is for populating the list
 	    	        		             		   		             		
 	    	        		             		var li = $("<li>");
 	    	        			            	var licls = $("</li>");
 	    	        			            	var a = $("<a>");
 	    	        			            	var acls = $("</a>");
-	    	        			            	a.attr("id", contacts[i].phoneNumbers[0].value).text(contacts[i].displayName);
+	    	        			            	if(contacts[i].displayName == null)
+	    	                	            		a.attr("id", contacts[i].phoneNumbers[0].value).text(contacts[i].name.givenName + contacts[i].name.familyName);
+	    	                       	 			else
+	    	                       	 				a.attr("id", contacts[i].phoneNumbers[0].value).text(contacts[i].displayName);
 	    	        			            	a.attr("href", contacts[i].phoneNumbers[0].value);
 	    	        			            	$("#contactlist").append(li)
 	    	        			            	li.append(a); //apended to li becos we wnad anchor tag inside tthe list
@@ -908,7 +942,12 @@
 	}// onLgSubmit close
                	
                	function checkConnection() {
-                    var networkState = navigator.connection.type;
+                    var platform = localStorage.getItem("deviceplatform");
+                    var networkState = null;
+                    if(platform == "Android"){ 
+                    	var networkState = navigator.connection.type; 
+                    	} else if(platform == "iOS") { 
+                    		var networkState = Connection.CELL; }
                     
                     var states = {};
                     states[Connection.UNKNOWN]  = '0';
@@ -990,10 +1029,10 @@
      	              	var dest = $('#phone_num').val();
      	      			var destnum = $.trim($('#phone_num').val()); // note when no value is entered the it does not passes null but some garbage so 'destnum !== null' will set to true instead use destnum != ""    
      	      			
-     	      			alert("userid" + userid);
-     	      			alert("callerid" + callerid);
-     	      			alert("phone_num" + destnum);
-     	      			alert(dest);
+     	      			//alert("userid" + userid);
+     	      			//alert("callerid" + callerid);
+     	      			//alert("phone_num" + destnum);
+     	      			//alert(dest);
      	      			console.log("userid" + userid);
      	      			console.log("callerid" + callerid);
      	      			console.log("phone_num" + destnum);
@@ -1010,17 +1049,20 @@
 		            			var recently_dialed_array = [ ];
 		            			recently_dialed_array.push(destnum);
 		            			localStorage.setItem("recently_dialed_array",JSON.stringify(recently_dialed_array));
-		            			alert("Recent contact updated");
+		            			console.log("Recent contact updated");
+		            			//alert("Recent contact updated");
 	                  	} else {
 	                  		if(recently_dialed_array.length > 10){
 	                  			recently_dialed_array.shift(); //this removes the  frist element
 	                  			recently_dialed_array.push(destnum);
 	                  			localStorage.setItem("recently_dialed_array",JSON.stringify(recently_dialed_array));
-	                  			alert("Recent contact updated");
+	                  			console.log("Recent contact updated");
+	                  			//alert("Recent contact updated");
 	                  		} else { //if recently dialed size has not reached the limit 
 	                  			recently_dialed_array.push(destnum);
 	                  			localStorage.setItem("recently_dialed_array",JSON.stringify(recently_dialed_array));
-	                  			alert("Recent contact updated");
+	                  			console.log("Recent contact updated");
+	                  			//alert("Recent contact updated");
 	                  		}
 	                  	}
      	      			
@@ -1170,7 +1212,10 @@
              
                   
                function checkConnection() {
-                      var networkState = navigator.connection.type;
+                      var networkState = null; 
+                      var platform = localStorage.getItem("deviceplatform"); 
+                      if(platform == "Android"){ var networkState = navigator.connection.type; } 
+                      else if(platform == "iOS") { var networkState = Connection.CELL; };
                       
                       var states = {};
                       states[Connection.UNKNOWN]  = '0';
@@ -1276,7 +1321,8 @@
       	    			console.log("bt_refresh_test");
                     	//alert("bt_retrive_test clicked");
                     	var usrl = document.URL ;
-                    	alert(usrl);
+                    	//alert(usrl);
+                    	console.log(usrl);
                  	 	$.mobile.changePage("#pageSettings",{
       						      	  allowSamePageTransition : true,
       							      transition              : 'none',
@@ -1372,7 +1418,15 @@
                 }// onSettingsRetriveClick
            	
                	function checkConnection() {
-                   var networkState = navigator.connection.type;
+                   var networkState = null; 
+                   var platform = localStorage.getItem("deviceplatform"); 
+                   if(platform == "Android"){ 
+                	   var networkState = navigator.connection.type; 
+                	   } else if(platform == "iOS") 
+                	   { 
+                		   var networkState = Connection.CELL; 
+                	   }
+                   
                    
                    var states = {};
                    states[Connection.UNKNOWN]  = '0';
@@ -1482,7 +1536,11 @@
 	            }); //recentlydialedlistdiv click event close
 	              	
 	                function checkConnection() {
-	                    var networkState = navigator.connection.type;
+	                    var networkState = null; 
+	                    var platform = localStorage.getItem("deviceplatform"); 
+	                    if(platform == "Android")
+	                    { var networkState = navigator.connection.type; } 
+	                    else if(platform == "iOS") { var networkState = Connection.CELL; }
 	                    
 	                    var states = {};
 	                    states[Connection.UNKNOWN]  = '0';
@@ -1540,20 +1598,20 @@
                    		//console.log("parsejason output " + data);
                    		for(var i in message.Rows)
                    			{
-                   			var li = $("<li>");
-                           	var licls = $("</li>");
-                           	var a = $("<a>");
-                           	var acls = $("</a>");
-                           	if(message.Rows[i][1] !== null)
-                           		a.attr("id", message.Rows[i][0]).text(message.Rows[i][1]);
-                           	else
-                           		a.attr("id", message.Rows[i][0]).text(message.Rows[i][0]);
-                           	a.attr("href", message.Rows[i][0]);
-                           	$("#calllogslist").append(li)
-                           	li.append(a); //apended to li becos we wnad anchor tag inside tthe list
-                           	li.append(acls);
-                           	$("#calllogslist").append(licls); //this didnt work
-                           	$("#calllogslist").listview('refresh');
+	                   			var li = $("<li>");
+	                           	var licls = $("</li>");
+	                           	var a = $("<a>");
+	                           	var acls = $("</a>");
+	                           	if(message.Rows[i][1] !== null)
+	                           		a.attr("id", message.Rows[i][0]).text(message.Rows[i][1]);
+	                           	else
+	                           		a.attr("id", message.Rows[i][0]).text(message.Rows[i][0]);
+	                           	a.attr("href", message.Rows[i][0]);
+	                           	$("#calllogslist").append(li)
+	                           	li.append(a); //apended to li becos we wnad anchor tag inside tthe list
+	                           	li.append(acls);
+	                           	$("#calllogslist").append(licls); //this didnt work
+	                           	$("#calllogslist").listview('refresh');
                    			 
                    			}
                    		//console.log("Call logs" + message); 
@@ -1570,7 +1628,7 @@
            
        $(document).on('click', '#a_calllogs_refresh', function(){
     	   
-       		alert("Call log refresh clicked")
+       		console.log("Call log refresh clicked")
            //document.addEventListener("deviceready", onCalllogList, false);
            
            //function onCalllogList() {
@@ -1600,7 +1658,7 @@
                			}
                		//console.log("Call logs" + message); 
                		}; //alert("Success" + message.result); };
-       	    	var errorCallback = function(message) { alert("Oopsie! " + message); };
+       	    	var errorCallback = function(message) { alert("Oopsie Unable to retrive contact! " + message); };
                	
        	    	
        	    calllogPlugin.createEvent(successCallback,errorCallback);
@@ -1626,26 +1684,25 @@
 			});
         	
         	**/
-        	
+        	//$( "#diallist" ).selectable();
         	$('#a_directcall_menu').on('click', function(){
+        			console.log("Inside directcall ");	
 	      		  $('#directcall-right-setting-popup').popup('reposition', 'positionTo: origin');
 	      		  $('#directcall-right-setting-popup').popup("open");
      	  		});
-           $('#a_contactlist_menu').on('click', function(){
-       		  $('#contactlist-right-setting-popup').popup('reposition', 'positionTo: origin');
-       		  $('#contactlist-right-setting-popup').popup("open");
-       	  	});
+           	$('#a_contactlist_menu').on('click', function(){
+	       		  $('#contactlist-right-setting-popup').popup('reposition', 'positionTo: origin');
+	       		  $('#contactlist-right-setting-popup').popup("open");
+       	  		});
            
-           $('#a_calllogs_menu').on('click', function(){
-       		  $('#calllogs-right-setting-popup').popup('reposition', 'positionTo: origin');
-       		  $('#calllogs-right-setting-popup').popup("open");
-       	  	});        		
-           $('#a_recentlydialed_menu').on('click', function(){
-        	   
-           		console.log("Inside recently dialed");
-      		  $('#recentlydialed-right-setting-popup').popup('reposition', 'positionTo: origin');
-      		  $('#recentlydialed-right-setting-popup').popup("open");
-      	  	});
+           	$('#a_calllogs_menu').on('click', function(){
+	       		  $('#calllogs-right-setting-popup').popup('reposition', 'positionTo: origin');
+	       		  $('#calllogs-right-setting-popup').popup("open");
+       	  		});        		
+           	$('#a_recentlydialed_menu').on('click', function(){
+        		  $('#recentlydialed-right-setting-popup').popup('reposition', 'positionTo: origin');
+      		  	  $('#recentlydialed-right-setting-popup').popup("open");
+      	  		});
          
         	var ThisPage = $(':mobile-pagecontainer').pagecontainer('getActivePage').attr('id');
         	
@@ -1723,7 +1780,10 @@
        		}// function PageReady close  
             	
        		function checkConnection() {
-                 var networkState = navigator.connection.type;
+                 var networkState = null; 
+                 var platform = localStorage.getItem("deviceplatform"); 
+                 if(platform == "Android"){ var networkState = navigator.connection.type; } 
+                 else if(platform == "iOS") { var networkState = Connection.CELL; };
                  
                  var states = {};
                  states[Connection.UNKNOWN]  = '0';
@@ -1739,7 +1799,7 @@
           } // if close for pageSettings check event
           else if (ThisPage == "pageRecentlyDialed"){
         	  
-          		alert("In Recent Contact List");
+          		console.log("In Recent Contact List");
         		var recently_dialed_array = [];
         		var recently_dialed_array = JSON.parse(localStorage.getItem("recently_dialed_array"));
         		console.log("recently dialed array= " + recently_dialed_array);
@@ -1786,7 +1846,7 @@
         	// Respond to back/forward navigation
         	$( window ).on( "navigate", function( event, data ){
         	 
-        	  if( data.state.direction == "back" ) {
+        	/**  if( data.state.direction == "back" ) {
         	    // Make use of the directional information
         	    if ($.mobile.activePage.attr("id") === "pageDirectCall") {
 	        	    	if(navigator.app){
@@ -1801,7 +1861,7 @@
 	        	            navigator.device.exitApp();
 	        	    	}
         			}
-          		}
+          		} **/
         	 });
         	
         	
@@ -1874,7 +1934,7 @@
         		</div>
         		
         		<div data-role="fieldcontain">
-	            		<input type="number"  class="ui-shadow ui-corner-all" id="phone_num" maxlength="15"/>
+	            		<input type="number"  class="ui-shadow ui-corner-all" id="phone_num" autofocus maxlength="15"/>
 	            		<input type="button" class="ui-btn ui-shadow ui-corner-all ui-icon-phone" name="bt_call" id="bt_call" value="Call"/>
 	            		
 	        	</div>
@@ -1913,8 +1973,8 @@
 			        	<li><a href="#" data-icon="grid" >Dial</a></li>
 			        	<!--  <li><a href="#pageDialPad" data-icon="grid" data-role="tab" class="ui-btn ui-btn-b">Dial test</a></li>-->
 				        <li><a href="#pageContactList" data-icon="user">Contacts</a></li>
-			    		<li><a href="#pageRecentlyDialed" data-icon="phone">Recent Contact</a></li>
-			    		<li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li>
+			    		<li><a href="#pageRecentlyDialed" data-icon="phone">Recent</a></li>
+			    		<!-- <li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li> -->
 			    		
 			        </ul>
 			    </div><!-- /navbar -->
@@ -1946,18 +2006,19 @@
 		    		<li><a href="#pageCallLogs">Call Logs</a></li> -->
 		    		<li data-role="list-divider">Settings</li>
 		    		<li><a href="#pageSettings">Account Details</a></li>
+		    		<li><a href="#pageDialPad">Dial</a></li>
 		    		<li><a id="logout" href="#">Logout</a></li>
     			</ul>
     		</div>
     		</div>
     	</div>
    		<div data-role="footer" data-position="fixed" data-theme="b"> <!-- data-position="fixed" is add so that the panel can be scroll -->
-   			<div data-role="navbar" data-grid="c">
+   			<div data-role="navbar" data-grid="b">
 			        <ul>
 			        	<li><a href="#pageDirectCall" data-icon="grid">Dial</a></li>
 				        <li><a href="#pageContactList" data-icon="user">Contacts</a></li>
 			    		<li><a href="#pageRecentlyDialed" data-icon="phone" >Recent</a></li>
-			    		<li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li>
+			    		<!-- <li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li> -->
 			    	</ul>
 			    </div><!-- /navbar -->
    		</div>
@@ -2033,12 +2094,12 @@
     		
     	</div>
    		<div data-role="footer" data-position="fixed" data-theme="b" > <!-- data-position="fixed" is add so that the panel can be scroll -->
-   			<div data-role="navbar" data-grid="c">
+   			<div data-role="navbar" data-grid="b">
 			        <ul>
 			        	<li><a href="#pageDirectCall" data-icon="grid">Dial</a></li>
 				        <li><a href="#pageContactList" data-icon="user">Contacts</a></li>
 			    		<li><a href="#pageRecentlyDialed" data-icon="phone">Recent</a></li>
-			    		<li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li>
+			    		<!-- <li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li> -->
 			    		<!-- <li><a href="#pageSettings" data-icon="gear">Account Details</a></li>
 			    		<li><a id="logout" data-icon="power" data-icon="href="#" >Logout</a></li> -->
 			        </ul>
@@ -2070,12 +2131,12 @@
     		</div>
     	</div>
    		<div data-role="footer" data-position="fixed"  data-theme="b"> <!-- data-position="fixed" is add so that the panel can be scroll -->
-	    	<div data-role="navbar"data-grid="c">
+	    	<div data-role="navbar" data-grid="b">
 			        <ul>
 			        	<li><a href="#pageDirectCall" data-icon="grid">Dial</a></li>
 				        <li><a href="#pageContactList" data-icon="user">Contacts</a></li>
 			    		<li><a href="#pageRecentlyDialed" data-icon="phone">Recent</a></li>
-			    		<li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li>
+			    		<!-- <li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li> -->
 			    		<!-- <li><a href="#pageSettings" data-icon="gear">Account Details</a></li>
 			    		<li><a id="logout" data-icon="power" data-icon="href="#" >Logout</a></li> -->
 			        </ul>
@@ -2085,28 +2146,42 @@
    </div>
         
         <div data-role="page" id="pageDialPad" data-title="dialpad">
-  		<div data-role="header" data-position="fixed">
-  		<h2>Dila Pad</h2>
-        </div>
-    <div data-role="main" class="ui-content" style="width: 100%; overflow-y: hidden;">
-     <!--
-    <ul id="items" style="width: 100%">
-      <li class="list">1</li>
-      <li class="list">2</li>
-      <li class="list">3</li>
-      <li class="list">4</li>
-      <li class="list">5</li>
-      <li class="list">6</li>
-      <li class="list">7</li>
-      <li class="list">8</li>
-      <li class="list">9</li>
-      <li class="list"></li>
-      <li class="list">0</li>
-      <li class="list" style="font-size:20px;">Clear</li>
-  </ul> -->
- 
-  
-    	
+	  		<div data-role="header" data-position="fixed">
+	  		<h2>Dial Pad</h2>
+	        </div>
+		    
+		   <div data-role="main" data-position="fixed"  class="ui-content">  
+		    <!--<ul id="items">
+		      <li class="list">1</li>
+		      <li class="list">2</li>
+		      <li class="list">3</li>
+		      <li class="list">4</li>
+		      <li class="list">5</li>
+		      <li class="list">6</li>
+		      <li class="list">7</li>
+		      <li class="list">8</li>
+		      <li class="list">9</li>
+		      <li class="list"></li>
+		      <li class="list">0</li>
+		      <li class="list" style="font-size:20px;">Clear</li>
+		      
+		      
+		       <li class="list"><a>1</a></li>
+		      <li class="list"><a>2</a></li>
+		      <li class="list"><a>3</a></li>
+		      <li class="list"><a>4</a></li>
+		      <li class="list"><a>5</a></li>
+		      <li class="list"><a>6</a></li>
+		      <li class="list"><a>7</a></li>
+		      <li class="list"><a>8</a></li>
+		      <li class="list"><a>9</a></li>
+		      <li class="list"><a></a></li>
+		      <li class="list"><a>0</a></li>
+		      <li class="list"><a>Clear</a></li>
+		  </ul>--> 
+		  
+		  
+		  
     	<!--  <table class="ui-bar-a" id="n_keypad">
     		<tr>
        			<td><a data-role="button" data-theme="b" class="numero">7</a></td>
@@ -2116,7 +2191,22 @@
     		</tr>
     		<tr>
        			<td><a data-role="button" data-theme="b"class="numero">4</a></td>
-       			<td><a data-role="button" data-theme="b" class="numero">5</a></td>
+       			<td><a data-role="b<div data-role="main" class="ui-content" style="width: 100%; overflow-y: hidden;">
+		     
+		    <ul id="items" style="width: 100%">
+		      <li class="list">1</li>
+		      <li class="list">2</li>
+		      <li class="list">3</li>
+		      <li class="list">4</li>
+		      <li class="list">5</li>
+		      <li class="list">6</li>
+		      <li class="list">7</li>
+		      <li class="list">8</li>
+		      <li class="list">9</li>
+		      <li class="list"></li>
+		      <li class="list">0</li>
+		      <li class="list" style="font-size:20px;">Clear</li>
+		  </ul> utton" data-theme="b" class="numero">5</a></td>
        			<td><a data-role="button" data-theme="b" class="numero">6</a></td>
        			<td><a data-role="button" data-theme="e" class="clear">Clear</a></td>
     		</tr>
@@ -2135,7 +2225,7 @@
     		</table>   -->
     	
     	
-    	 <div class="ui-grid-b" style="width: 100%; height: 100%; padding: 0px;">
+    	<!--   <div class="ui-grid-b" style="width: 100%; height: 100%; padding: 0px;">
 		    <div class="ui-block-a"><div id="customdiv" class="ui-bar ui-bar-a" style="height:60px;">1</div></div>
 		    <div class="ui-block-b"><div id="customdiv" class="ui-bar ui-bar-a" style="height:60px;">2</div></div>
 		    <div class="ui-block-c"><div id="customdiv" class="ui-bar ui-bar-a" style="height:60px;">3</div></div>
@@ -2148,23 +2238,60 @@
 		    <div class="ui-block-a"><div id="customdiv" class="ui-bar ui-bar-a" style="height:60px;">*</div></div>
 		    <div class="ui-block-b"><div id="customdiv" class="ui-bar ui-bar-a" style="height:60px;">0</div></div>
 		    <div class="ui-block-c"><div id="customdiv" class="ui-bar ui-bar-a" style="height:60px;">#</div></div>
-		</div>
+		</div>-->
     	</div>
-    	<div data-role="footer" data-position="fixed" data-tap-toggle="false"> <!-- data-position="fixed" is add so that the panel can be scroll -->
-	    	<div data-role="navbar">
-	    		<form >
+	    	<div data-role="footer" data-position="fixed" data-theme="b"><!--  data-position="fixed" is add so that the panel can be scroll-->
+	    	<!--<div data-role="navbar" data-theme="e">
+	    	 <table>
+		    	<tr>
+		    	<td colspan="3">
+					<input type="number" class="ui-shadow ui-corner-all" id="numbertext" />	    	
+		    	</td>
+		    	<td>
+		    		<input type="button" class="ui-btn ui-btn-b" value="Call" id="numbercall" />
+		    	</td>
+		    	</tr>
+	    	</table>
+	    	</div> -->
+	    	
+	    	
+			<!-- <ul>
+  			  <li class="ui-block-a" style="width:80%; padding: 0px;"><input type="number" class="ui-shadow ui-corner-all" id="numbertext" /></li>
+		      <li class="ui-block-b" style="width:20%; padding: 0px;"><a type="button" class="ui-btn ui-shadow ui-corner-all" data-theme="b" data-rel="dialog"  >Send</a></li>
+		    </ul> -->
+			
+	    	<div data-role="navbar" data-grid="b">
+  			<ul id="diallist">
+  			  <li class="list">1</li>
+		      <li class="list">2</li>
+		      <li class="list">3</li>
+		      <li class="list">4</li>
+		      <li class="list">5</li>
+		      <li class="list">6</li>
+		      <li class="list">7</li>
+		      <li class="list">8</li>
+		      <li class="list">9</li>
+		      <li class="list"></li>
+		      <li class="list">0</li>
+		      <li class="list" style="font-size:20px;">Clear</li>
+		  </ul>
+		  
+    	</div>  
+	    	<div data-role="navbar" data-grid="c">
+	    		
 			        <ul>
 			        	<li><a href="#pageDirectCall" data-icon="grid" data-role="tab" class="ui-btn ui-btn-b">Dial</a></li>
 				        <li><a href="#pageContactList" data-icon="user" data-role="tab" class="ui-btn ui-btn-b">Contacts</a></li>
 			    		<li><a href="#pageRecentlyDialed" data-icon="phone" data-role="tab" class="ui-btn ui-btn-b">Recent</a></li>
 			    		<li><a href="#pageCallLogs" data-icon="clock" data-role="tab" class="ui-btn ui-btn-b">Call Logs</a></li>
-			    		<!-- <li><a href="#pageSettings" data-icon="gear">Account Details</a></li>
+			    		<!--<li><a href="#pageSettings" data-icon="gear">Account Details</a></li>
 			    		<li><a id="logout" data-icon="power" data-icon="href="#" >Logout</a></li> -->
 			        </ul>
-			        </form> 
-			    </div><!-- /navbar -->
-	    	
-   		</div>
+			      
+			    </div>
+    
+   </div>
+   		
     	</div>
        
         </body>
