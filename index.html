@@ -1558,33 +1558,7 @@
        
   
            /************************************************************CALL LOGS PAGE STARTS **********************************/
-          $(document).on('pagecreate', '#pageDialPad', function(){
-        	  //document.addEventListener("deviceready", onclickable, false);
-        	  
-        	/**  function onclickable() {
-          		var numbers = "";
-        	  $("#items").selectable({
-                  selected: function (event, ui) {
-                          $(".ui-selected", this).each(function () {
-                                  var index = $("#items li").index(this);
-   
-                                  if (index == 9) {
-                                          return;
-                                  }
-                                  if (index == 10) {
-                                          index = -1;
-                                  }
-   
-                                  numbers += (index + 1);
-                                  if (index == 11) {
-                                          numbers = "";
-                                  }
-                                  $("#info").html(numbers);
-                          });
-                  }
-          });
-        	  }**/
-          });
+     
            $(document).on('pagecreate', '#pageCallLogs', function(){
         	   //alert("Page Calllogs created");
         	   document.addEventListener("deviceready", onCalllogList, false);
@@ -1665,6 +1639,186 @@
        //}// oncallloglist close
            
       });
+           
+       $(document).on('pagecreate', '#pageDialPad', function(){
+     	  
+     	  
+     	  document.addEventListener("deviceready", ondialed, false);
+     	  
+     	function ondialed() {
+     	   var dialednumber = null;
+     	   
+     	  $('#diallist').on('click', 'a', function(event){
+     		   
+     			var clickedval = $(this).attr('href');
+       			if (clickedval == "clear"){
+       			
+       			if (dialednumber !== null){
+       				
+       				var digit; // note for array function like pop,push to work declare it in the scope of the function
+       				
+         	  		//digit = $.makeArray(dialednumber); //note this function doesnot covert the value in varialbe to array, instead it add the value of the variable as the first value in the array
+         	  		//digit.push("6");
+         	  		//alert(digit); //uncomment the above lines and see 
+         	  		
+         	  		digit = dialednumber.split("");
+       				digit.pop();
+       				//alert(digit);
+       				dialednumber = digit.join("");
+       				
+       				$('#dialednumber').val(dialednumber);
+       				
+        			}else
+       				$('#dialednumber').val("");
+       			
+       		}
+       		else if (dialednumber !== null && !isNaN(clickedval)){
+       			
+       			dialednumber = dialednumber + clickedval;
+       			$('#dialednumber').val(dialednumber);
+       			
+       		}
+       		else if (clickedval == "call" && $('#dialednumber').val() != ""){ // when call button is clicked
+ 				
+       			var datastatus = checkConnection();
+              	if(datastatus == "0" || datastatus == "1"){
+         				
+         				alert("No Data Network found");
+         				
+         			} else {  
+              	  
+  	              	console.log("test");
+  	              	var userid = localStorage.getItem("userid");
+  	              	var callerid = localStorage.getItem("caller_id");
+  	              	var dest = $('#dialednumber').val();
+  	      			var destnum = $.trim($('#dialednumber').val()); // note when no value is entered the it does not passes null but some garbage so 'destnum !== null' will set to true instead use destnum != ""    
+  	      			
+  	      			//alert("userid" + userid);
+  	      			//alert("callerid" + callerid);
+  	      			//alert("phone_num" + destnum);
+  	      			//alert(dest);
+  	      			console.log("userid" + userid);
+  	      			console.log("callerid" + callerid);
+  	      			console.log("phone_num" + destnum);
+  	      			console.log("phone_num length" + destnum.length);
+  	      			console.log("phone_num untrim " + dest.length);
+  	      			var recently_dialed_array = [ ]; // this must be outside the if loop i.e inside document load
+  	      			
+  	      			console.log("Recent dialed array " + recently_dialed_array);
+  	      			
+             		var recently_dialed_array = JSON.parse(localStorage.getItem("recently_dialed_array"));
+  	      			console.log("Recent dialed array content" + recently_dialed_array);
+  	      			console.log("Recent dialed array length" + recently_dialed_array);
+             		if(recently_dialed_array === null){
+ 	            			var recently_dialed_array = [ ];
+ 	            			recently_dialed_array.push(destnum);
+ 	            			localStorage.setItem("recently_dialed_array",JSON.stringify(recently_dialed_array));
+ 	            			//alert("Recent contact updated");
+ 	            			console.log("Recent contact updated");
+                   	} else {
+                   		if(recently_dialed_array.length > 10){
+                   			recently_dialed_array.shift(); //this removes the  frist element
+                   			recently_dialed_array.push(destnum);
+                   			localStorage.setItem("recently_dialed_array",JSON.stringify(recently_dialed_array));
+                   			//alert("Recent contact updated");
+                   			console.log("Recent contact updated");
+                   		} else { //if recently dialed size has not reached the limit 
+                   			recently_dialed_array.push(destnum);
+                   			localStorage.setItem("recently_dialed_array",JSON.stringify(recently_dialed_array));
+                   			//alert("Recent contact updated");
+                   			console.log("Recent contact updated");
+                   		}
+                   	}
+  	      			
+  	      			
+  	      			
+  	      			if((userid.length > 0 && userid !== null) && (callerid.length > 0 && callerid !== null) && (destnum.length > 0 && destnum != "")){
+  	      				
+  	      			//if(!(userid === null) && !(callerid === null) && !(destnum === null )) {
+  	              	 $.ajax({
+  	                       type: "GET",
+  	                       url: "http://mail.tsim.in/webcall.php",
+  	                       data: {action: 'call',domains: 'tsim.in',user_id: userid,caller_id: callerid,dest_num: destnum},
+  	                       cache: false,
+  	                       dataType: 'json',
+  	                       success : function(data){
+  	                    	   ////$("#loaderdialog").html("done");
+  	                    	   
+  	                    	   	if (data.credit == null || data.credit == '0')
+                      				localStorage.setItem("credit_details", "0.0");
+                      			else
+                      				localStorage.setItem("credit_details",data.credit);
+  	                    	   	
+  	                    	    if (data.result == '0'){
+  	                    		   
+  	                    		 	console.log("Error: " + data.result_msg);
+  	                    		 	//$('label[for=Call_status]').css({backgroundColor:'#cfc'});
+  	                    		 	//$("#Call_status").text(data.result_msg);
+  	                    		 	alert(data.result_msg);
+  	                    	   	} else if (data.result == '1'){
+  	                    		   
+  	                    		   	console.log("Call Status: " + data.result_msg);
+   	                    	   		//$('label[for=Call_status]').css({backgroundColor:'#cfc'});
+  	                    	   		//$("#Call_status").text(data.result_msg);
+   	                    	   		alert(data.result_msg);
+  	                    	   	}
+  	                    	   
+  	                        },
+  		              		error: function (data){
+  		    	   				alert("Unable to connect to server");
+  		              		}
+  	    	   	 		});
+  	      			} else {
+  	      				
+  	      				if(userid === null || userid.length == 0){
+  	      					alert("User Id not set");
+  	      					console.log("User Id not set");
+  	      					//$("#Call_status").text("User Id not set");
+  	      				} else if (callerid === null ||callerid.length == 0){
+  	      					alert("Please set CallerID in account details");
+  	      					console.log("Please set CallerID in account details");
+  	      					//$("#Call_status").text("Please set CallerID");
+  	      				} else if (destnum === null || destnum.length == 0){
+  	      					alert("Destitation number not set");
+  	      					console.log("Destitation number not set");
+  	      					//$("#Call_status").text("Enter Caller number");
+  	      				} else {
+  	      					alert("Cannot Make Call Insufficient parameters");
+  	      					console.log("Cannot Make Call Insufficient parameters");
+  	      					//$("#Call_status").text("Insufficient parameters");
+  	      				}
+    	      			}
+        			
+         		}// else close for network staus 
+   	         			
+       		}
+       		else{     			
+           		dialednumber = clickedval;
+       			$('#dialednumber').val(dialednumber);
+        			}
+     		  
+     		  
+     	  });      		
+     	  }
+     	  
+     	  function checkConnection() {
+               var networkState = navigator.connection.type;
+               
+               var states = {};
+               states[Connection.UNKNOWN]  = '0';
+               states[Connection.NONE]     = '1';
+               states[Connection.CELL_2G]  = '2';
+               states[Connection.CELL_3G]  = '3';
+               states[Connection.CELL_4G]  = '4';
+               states[Connection.ETHERNET] = '6';
+               states[Connection.WIFI]     = '5';
+               
+               return states[networkState];
+           }// function checkConnection close     
+     	  
+     	  
+       });   
+           
            
            
   /******************************************* PGECONTAINER  SHOW EVENT **************************************************/ 	
@@ -2015,7 +2169,7 @@
    		<div data-role="footer" data-position="fixed" data-theme="b"> <!-- data-position="fixed" is add so that the panel can be scroll -->
    			<div data-role="navbar" data-grid="b">
 			        <ul>
-			        	<li><a href="#pageDirectCall" data-icon="grid">Dial</a></li>
+			        	<li><a href="#pageDialpad" data-icon="grid">Dial</a></li>
 				        <li><a href="#pageContactList" data-icon="user">Contacts</a></li>
 			    		<li><a href="#pageRecentlyDialed" data-icon="phone" >Recent</a></li>
 			    		<!-- <li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li> -->
@@ -2096,7 +2250,7 @@
    		<div data-role="footer" data-position="fixed" data-theme="b" > <!-- data-position="fixed" is add so that the panel can be scroll -->
    			<div data-role="navbar" data-grid="b">
 			        <ul>
-			        	<li><a href="#pageDirectCall" data-icon="grid">Dial</a></li>
+			        	<li><a href="#pageDialPad" data-icon="grid">Dial</a></li>
 				        <li><a href="#pageContactList" data-icon="user">Contacts</a></li>
 			    		<li><a href="#pageRecentlyDialed" data-icon="phone">Recent</a></li>
 			    		<!-- <li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li> -->
@@ -2133,7 +2287,7 @@
    		<div data-role="footer" data-position="fixed"  data-theme="b"> <!-- data-position="fixed" is add so that the panel can be scroll -->
 	    	<div data-role="navbar" data-grid="b">
 			        <ul>
-			        	<li><a href="#pageDirectCall" data-icon="grid">Dial</a></li>
+			        	<li><a href="#pageDialPad" data-icon="grid">Dial</a></li>
 				        <li><a href="#pageContactList" data-icon="user">Contacts</a></li>
 			    		<li><a href="#pageRecentlyDialed" data-icon="phone">Recent</a></li>
 			    		<!-- <li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li> -->
@@ -2147,7 +2301,7 @@
         
         <div data-role="page" id="pageDialPad" data-title="dialpad">
 	  		<div data-role="header" data-position="fixed">
-	  		<h2>Dial Pad</h2>
+	  		
 	        </div>
 		    
 		   <div data-role="main" data-position="fixed"  class="ui-content">  
@@ -2259,37 +2413,38 @@
   			  <li class="ui-block-a" style="width:80%; padding: 0px;"><input type="number" class="ui-shadow ui-corner-all" id="numbertext" /></li>
 		      <li class="ui-block-b" style="width:20%; padding: 0px;"><a type="button" class="ui-btn ui-shadow ui-corner-all" data-theme="b" data-rel="dialog"  >Send</a></li>
 		    </ul> -->
-			
-	    	<div data-role="navbar" data-grid="b">
+			<input type="number" id="dialednumber" readonly="readonly" style="text-align: right; font-size: x-large; background-color: silver; color: black; margin: 0px; padding-bottom: 0px;"/> 
+			<div data-role="navbar" data-grid="b" style="margin-bottom: 2px; margin-top: 0px; padding-top: 0px;" >
   			<ul id="diallist">
-  			  <li class="list">1</li>
-		      <li class="list">2</li>
-		      <li class="list">3</li>
-		      <li class="list">4</li>
-		      <li class="list">5</li>
-		      <li class="list">6</li>
-		      <li class="list">7</li>
-		      <li class="list">8</li>
-		      <li class="list">9</li>
-		      <li class="list"></li>
-		      <li class="list">0</li>
-		      <li class="list" style="font-size:20px;">Clear</li>
+  			  <!--  <li ><a href="1" data-role="tab"  class="ui-btn" style="line-height: 40px; font-size: large; color: black;  background-color: silver; margin: 1px;">1</a></li>-->
+  			  <li ><a href="1" data-role="tab" data-theme="a"  class="ui-btn" style="line-height: 40px; font-size: large; margin: 1px;">1</a></li>
+		      <li ><a href="2" data-role="tab" data-theme="a" class="ui-btn" style="line-height: 40px; font-size: large; margin: 1px;">2</a></li>
+		      <li ><a href="3" data-role="tab" data-theme="a" class="ui-btn" style="line-height: 40px; font-size: large; margin: 1px;">3</a></li>
+		      <li ><a href="4" data-role="tab" data-theme="a" class="ui-btn" style="line-height: 40px; font-size: large; margin: 1px;">4</a></li>
+		      <li ><a href="5" data-role="tab" data-theme="a" class="ui-btn" style="line-height: 40px; font-size: large; margin: 1px;">5</a></li>
+		      <li ><a href="6" data-role="tab" data-theme="a" class="ui-btn" style="line-height: 40px; font-size: large; margin: 1px;">6</a></li>
+		      <li ><a href="7" data-role="tab" data-theme="a" class="ui-btn" style="line-height: 40px; font-size: large; margin: 1px;">7</a></li>
+		      <li ><a href="8" data-role="tab" data-theme="a" class="ui-btn" style="line-height: 40px; font-size: large; margin: 1px;">8</a></li>
+		      <li ><a href="9" data-role="tab" data-theme="a" class="ui-btn" style="line-height: 40px; font-size: large; margin: 1px;">9</a></li>
+		      <li ><a href="clear" data-role="tab" class="ui-btn" style="line-height: 40px; font-size: large;  background-color: red; margin: 1px;">Clear</a></li>
+		      <li ><a href="0" data-role="tab" data-theme="a" class="ui-btn" style="line-height: 40px; font-size: large;  margin: 1px;">0</a></li>
+		      <li ><a href="call" data-role="tab" class="ui-btn" style="line-height: 40px; font-size: large;  background-color: green; margin: 1px;">Call</a></li>
 		  </ul>
 		  
     	</div>  
-	    	<div data-role="navbar" data-grid="c">
-	    		
-			        <ul>
-			        	<li><a href="#pageDirectCall" data-icon="grid" data-role="tab" class="ui-btn ui-btn-b">Dial</a></li>
-				        <li><a href="#pageContactList" data-icon="user" data-role="tab" class="ui-btn ui-btn-b">Contacts</a></li>
-			    		<li><a href="#pageRecentlyDialed" data-icon="phone" data-role="tab" class="ui-btn ui-btn-b">Recent</a></li>
-			    		<li><a href="#pageCallLogs" data-icon="clock" data-role="tab" class="ui-btn ui-btn-b">Call Logs</a></li>
-			    		<!--<li><a href="#pageSettings" data-icon="gear">Account Details</a></li>
+	    	  <div data-role="navbar" data-grid="c">
+	    			<ul>
+	    				<!-- <li><a href="#pageDirectCall" data-icon="grid">Dial</a></li> -->
+			        	<li><a href="#" data-icon="grid">Dial</a></li>
+			        	<li><a href="#pageContactList" data-icon="user">Contacts</a></li>
+			    		<li><a href="#pageRecentlyDialed" data-icon="phone">Recent</a></li>
+			    		<li><a href="#pageCallLogs" data-icon="clock">Call Logs</a></li>
+			    		<!-- <li><a href="#pageSettings" data-icon="gear">Account Details</a></li>
 			    		<li><a id="logout" data-icon="power" data-icon="href="#" >Logout</a></li> -->
 			        </ul>
-			      
-			    </div>
-    
+	    			        			      
+			   </div>
+	    	    
    </div>
    		
     	</div>
